@@ -47,7 +47,7 @@ class Settings(BaseSettings):
         LOG_LEVEL (str): Logging level for the application
         LOG_FORMAT (str): Format string for log messages
     """
-    # API Settings
+    # API Settings - defines the base path and name for the API
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "GitHub Inviter"
     
@@ -74,6 +74,7 @@ class Settings(BaseSettings):
         case_sensitive = True
         extra = "allow"  # Allow extra fields from .env file
 
+# Create and cache settings instance using singleton pattern
 @lru_cache()
 def get_settings() -> Settings:
     """

@@ -66,6 +66,7 @@ class GitHubClient:
         ```
     """
     
+    # Initialize GitHub client with access token and configuration
     def __init__(self, access_token: str):
         """
         Initialize the GitHub client.
@@ -83,15 +84,18 @@ class GitHubClient:
         self._client: Optional[httpx.AsyncClient] = None
         self.rate_limit = {"remaining": 5000, "reset": 0}
 
+    # Enter context manager and initialize HTTP client
     async def __aenter__(self):
         """Initialize the HTTP client when entering the context manager."""
         await self.init_client()
         return self
 
+    # Exit context manager and cleanup resources
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Clean up resources when exiting the context manager."""
         await self.close()
 
+    # Create async HTTP client with timeout and headers
     async def init_client(self):
         """Initialize the HTTP client if it hasn't been initialized."""
         if not self._client:
@@ -101,12 +105,14 @@ class GitHubClient:
                 timeout=settings.GITHUB_TIMEOUT
             )
 
+    # Close HTTP client and free resources
     async def close(self):
         """Close the HTTP client and clean up resources."""
         if self._client:
             await self._client.aclose()
             self._client = None
 
+    # Make HTTP request to GitHub API with rate limiting and error handling
     async def _make_request(
         self,
         method: str,
@@ -181,6 +187,7 @@ class GitHubClient:
             logger.error(error_msg)
             raise GitHubAPIError(message=error_msg)
 
+    # Invite user to repository with specified permissions
     async def invite_to_repository(
         self,
         owner: str,
@@ -214,6 +221,7 @@ class GitHubClient:
             json={"permission": permission}
         )
 
+    # Invite user to organization with specified role
     async def invite_to_organization(
         self,
         org: str,
@@ -258,6 +266,7 @@ class GitHubClient:
             json={"role": role}
         )
 
+    # Verify GitHub user exists and return user information
     async def get_user_info(self, username: str) -> Dict[str, Any]:
         """
         Get information about a GitHub user.

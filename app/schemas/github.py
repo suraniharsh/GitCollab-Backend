@@ -91,6 +91,7 @@ class BatchInvitationResponse(BaseModel):
     )
     
     @classmethod
+    # Create batch response from individual results with success/failure counts
     def from_results(cls, results: List[InvitationResponse]) -> "BatchInvitationResponse":
         """
         Create a BatchInvitationResponse from a list of InvitationResponse objects.

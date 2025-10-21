@@ -62,6 +62,7 @@ app.include_router(
     tags=["github"]
 )
 
+# Root endpoint - provides basic information about the API
 @app.get("/", tags=["health"])
 async def root():
     """
@@ -101,6 +102,7 @@ async def root():
         }
     }
 
+# Health check endpoint for monitoring and load balancers
 @app.get("/health", tags=["health"])
 async def health_check():
     """
