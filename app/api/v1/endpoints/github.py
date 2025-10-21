@@ -47,6 +47,7 @@ security = HTTPBearer()
     """,
     response_description="Results of the invitation operations with success/failure counts"
 )
+# Invite multiple users to a repository with error handling
 async def invite_to_repository(
     request: InvitationBase,
     credentials: HTTPAuthorizationCredentials = Depends(security)
@@ -72,13 +73,14 @@ async def invite_to_repository(
         owner, repo = request.target_name.split("/")
     except ValueError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_400_BAD_REQUEST,  # HTTP 400
             detail="target_name must be in format 'owner/repo'"
         )
 
     access_token = credentials.credentials
     results: List[InvitationResponse] = []
     
+    # Use context manager to ensure proper cleanup of HTTP client
     async with GitHubClient(access_token) as github:
         for username in request.users:
             try:
@@ -104,6 +106,7 @@ async def invite_to_repository(
                     ))
                     
             except GitHubAPIError as e:
+                # Handle errors for individual users
                 error_message = str(e)
                 if "already a collaborator" in error_message.lower():
                     results.append(InvitationResponse(
@@ -112,6 +115,7 @@ async def invite_to_repository(
                         message="User is already a collaborator"
                     ))
                 else:
+                    # Other errors (user not found, permission denied, etc.)
                     results.append(InvitationResponse(
                         username=username,
                         status="error",
@@ -138,6 +142,7 @@ async def invite_to_repository(
     """,
     response_description="Results of the invitation operations with success/failure counts"
 )
+# Invite multiple users to an organization with error handling
 async def invite_to_organization(
     request: InvitationBase,
     credentials: HTTPAuthorizationCredentials = Depends(security)
@@ -158,9 +163,11 @@ async def invite_to_organization(
     Raises:
         GitHubAPIError: If there are issues with the GitHub API
     """
+    # Extract the access token from the Authorization header
     access_token = credentials.credentials
     results: List[InvitationResponse] = []
     
+    # Use context manager to ensure proper cleanup of HTTP client
     async with GitHubClient(access_token) as github:
         for username in request.users:
             try:
@@ -170,20 +177,22 @@ async def invite_to_organization(
                     role="member" if request.permission_level == "write" else request.permission_level
                 )
                 
-                # Check response status
                 if response.get("state") == "active":
+                    # User is already an active member
                     results.append(InvitationResponse(
                         username=username,
                         status="success",
                         message="User is already an active member"
                     ))
                 elif response.get("state") == "pending":
+                    # Invitation sent, waiting for user to accept
                     results.append(InvitationResponse(
                         username=username,
                         status="success",
                         message="Invitation sent successfully"
                     ))
                 else:
+                    # Other successful outcomes
                     results.append(InvitationResponse(
                         username=username,
                         status="success",

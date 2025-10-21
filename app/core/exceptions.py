@@ -41,6 +41,7 @@ class GitHubAPIError(Exception):
         )
         ```
     """
+    # Initialize GitHub API error with status code and response details
     def __init__(
         self,
         message: str,
@@ -62,6 +63,7 @@ class InvalidTokenError(HTTPException):
         status_code (int): HTTP 401 Unauthorized
         detail (str): Error message explaining the token issue
     """
+    # Raise HTTP 401 for invalid or expired tokens
     def __init__(self):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -82,6 +84,7 @@ class RateLimitExceededError(HTTPException):
     Args:
         reset_time (str): Time when the rate limit will reset
     """
+    # Raise HTTP 429 when rate limit is exceeded
     def __init__(self, reset_time: str):
         super().__init__(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -103,6 +106,7 @@ class ResourceNotFoundError(HTTPException):
         resource_type (str): Type of resource (e.g., "Repository", "Organization")
         resource_name (str): Name of the resource that was not found
     """
+    # Raise HTTP 404 when requested resource is not found
     def __init__(self, resource_type: str, resource_name: str):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,

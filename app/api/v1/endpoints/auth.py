@@ -44,6 +44,7 @@ router = APIRouter()
         400: {"description": "Invalid client configuration"}
     }
 )
+# Redirect user to GitHub OAuth authorization page
 async def github_login():
     """
     Start the GitHub OAuth flow by redirecting to GitHub's authorization page.
@@ -62,12 +63,15 @@ async def github_login():
     Raises:
         HTTPException: If client configuration is invalid
     """
+    # Build the OAuth authorization parameters
     params = {
-        "client_id": settings.GITHUB_CLIENT_ID,
-        "redirect_uri": settings.GITHUB_REDIRECT_URI,
-        "scope": "repo admin:org read:org"
+        "client_id": settings.GITHUB_CLIENT_ID,  # Our application's GitHub OAuth client ID
+        "redirect_uri": settings.GITHUB_REDIRECT_URI,  # Where GitHub will redirect back after auth
+        "scope": "repo admin:org read:org"  # Permissions we're requesting from the user
     }
+    # Construct the full GitHub authorization URL with encoded parameters
     github_auth_url = f"https://github.com/login/oauth/authorize?{urlencode(params)}"
+    # Redirect the user to GitHub's authorization page
     return RedirectResponse(url=github_auth_url)
 
 @router.get(
@@ -84,6 +88,7 @@ async def github_login():
         500: {"description": "GitHub API communication error"}
     }
 )
+# Exchange OAuth code for access token and retrieve user info
 async def github_callback(code: str):
     """
     Handle the GitHub OAuth callback and exchange code for access token.
@@ -117,8 +122,8 @@ async def github_callback(code: str):
         ```
     """
     try:
+        # Create an async HTTP client for making requests to GitHub
         async with httpx.AsyncClient() as client:
-            # Exchange code for access token
             token_response = await client.post(
                 "https://github.com/login/oauth/access_token",
                 headers={"Accept": "application/json"},
@@ -129,17 +134,19 @@ async def github_callback(code: str):
                     "redirect_uri": settings.GITHUB_REDIRECT_URI
                 }
             )
+            # Parse the JSON response containing the access token
             token_data = token_response.json()
             
+            # Check if GitHub returned an error (e.g., invalid code, expired code)
             if "error" in token_data:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=400,  # Bad Request - the authorization failed
                     detail=f"GitHub OAuth error: {token_data['error_description']}"
                 )
             
+            # Extract the access token from the response
             access_token = token_data.get("access_token")
             
-            # Get user information
             user_response = await client.get(
                 "https://api.github.com/user",
                 headers={
@@ -147,8 +154,10 @@ async def github_callback(code: str):
                     "Accept": "application/vnd.github+json"
                 }
             )
+            # Parse the user information from the response
             user_data = user_response.json()
             
+            # Return the access token and user information in a structured response
             return TokenResponse(
                 access_token=access_token,
                 token_type="bearer",
@@ -156,6 +165,7 @@ async def github_callback(code: str):
             )
             
     except httpx.HTTPError as e:
+        # Handle any HTTP errors that occurred during the OAuth process
         raise GitHubAPIError(
             message="Failed to authenticate with GitHub",
             status_code=e.response.status_code if hasattr(e, 'response') else 500
